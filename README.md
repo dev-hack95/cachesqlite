@@ -1,3 +1,3 @@
 # cachesqlite
 
-![arch]("./assets/arch.png")
+![arch](./assets/arch.png)
