@@ -3,6 +3,11 @@
 #include "../include/conn.h"
 #include <sqlite3.h>
 
+struct Connection {
+  sqlite3 *diskdb;
+  sqlite3 *memdb;
+};
+
 
 void init_database(struct Connection *conn,  const char *filename) {
   int diskdb_status = sqlite3_open(filename, &conn->diskdb);
@@ -97,14 +102,14 @@ void test_insert(struct Connection *conn) {
   }
 }
 
-int main() {
-  const char *filename = "./redis.db";
-  struct Connection *conn = calloc(1, sizeof(struct Connection));
-  init_database(conn, filename);
-  merge_database(conn);
-  test_insert(conn);
-  memdb_to_disk_transfer(conn);
-  free(conn);
-  
-  return 0;
-}
+// int main() {
+//   const char *filename = "./redis.db";
+//   struct Connection *conn = calloc(1, sizeof(struct Connection));
+//   init_database(conn, filename);
+//   merge_database(conn);
+//   test_insert(conn);
+//   memdb_to_disk_transfer(conn);
+//   free(conn);
+
+//   return 0;
+// }
