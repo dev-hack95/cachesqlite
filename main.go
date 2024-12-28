@@ -1,16 +1,16 @@
 package main
 
 import (
-	"cahcesqlite/cachesqlitelocal"
+	"cahcesqlite/client"
 	"cahcesqlite/helper"
 
 	"github.com/gin-gonic/gin"
 )
 
-var conn *cachesqlitelocal.Connection
+var conn *client.Connection
 
 func init() {
-	conn = cachesqlitelocal.NewConnection()
+	conn = client.NewConnection()
 	if err := conn.InitDatabase("redis.db"); err != nil {
 		panic(err)
 	}
