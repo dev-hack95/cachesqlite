@@ -1,4 +1,4 @@
-package cachesqlitelocal
+package client
 
 /*
 #cgo CFLAGS: -I.
@@ -25,6 +25,10 @@ func (c *Connection) InitDatabase(filename string) error {
 	C.init_database(c.conn, cFilename)
 	C.merge_database(c.conn)
 	return nil
+}
+
+func (c *Connection) TestInsert() {
+	C.test_insert(c.conn)
 }
 
 func (c *Connection) Cleanup() {

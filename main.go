@@ -14,8 +14,6 @@ func init() {
 	if err := conn.InitDatabase("redis.db"); err != nil {
 		panic(err)
 	}
-	conn.AttachDatabase()
-	conn.TestInsert()
 }
 
 func main() {
