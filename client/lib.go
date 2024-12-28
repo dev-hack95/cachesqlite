@@ -27,10 +27,6 @@ func (c *Connection) InitDatabase(filename string) error {
 	return nil
 }
 
-func (c *Connection) TestInsert() {
-	C.test_insert(c.conn)
-}
-
 func (c *Connection) Cleanup() {
 	C.memdb_to_disk_transfer(c.conn)
 }
