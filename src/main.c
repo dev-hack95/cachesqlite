@@ -17,9 +17,7 @@ struct Connection {
 
 void init_database(struct Connection *conn,  const char *filename) {
   conn->filename = calloc(strlen(filename) + 1, sizeof(char));
-  //log_info("%s", filename);
   strncpy(conn->filename, filename, strlen(filename) + 1);
-  //log_info("%s", conn->filename);  
   int diskdb_status = sqlite3_open(filename, &conn->diskdb);
   if (diskdb_status != SQLITE_OK) {
     log_err("error occured at opening sql file");
@@ -45,8 +43,6 @@ void merge_database(struct Connection *conn) {
     const char *detach_query = "DETACH DATABASE diskdb;";
     char *err_msg;
 
-    log_info("%s", create_table_query);
-    log_info("%s", insert_query);
     
     sqlite3_exec(conn->memdb, attach_query, 0, 0, &err_msg);
     if (err_msg) {
@@ -133,6 +129,7 @@ void set(struct Connection *conn, char *key, char *value, time_t duration) {
     exit(1);
   }
 }
+
 
 void test_insert(struct Connection *conn) {
   const char *insert_query = "INSERT INTO cache_0 (key, value) VALUES ('key1', 'value1'), ('key2', 'value2'), ('key3', 'value3'), ('key4', 'value4'), ('key5', 'value5'), ('key6', 'value6')";

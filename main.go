@@ -17,7 +17,6 @@ func init() {
 }
 
 func main() {
-	defer conn.Cleanup()
 	r := gin.Default()
 
 	helper.RunServer("0.0.0.0:8000", conn, r)
