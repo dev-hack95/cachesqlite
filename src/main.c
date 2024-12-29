@@ -4,9 +4,14 @@
 #include "../include/conn.h"
 #include <sqlite3.h>
 #include <string.h>
-#include <time.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <unistd.h>
 
 #define QUERY_MAX_SIZE 1024
+
+static pthread_t ttl_thread = 0;
+static bool is_running = false;
 
 struct Connection {
   sqlite3 *diskdb;
@@ -126,28 +131,98 @@ void set(struct Connection *conn, char *key, char *value, time_t duration) {
   if (err_msg) {
     log_err("error: %s", err_msg);
     sqlite3_free(err_msg);
-    exit(1);
   }
 }
 
+void del(struct Connection *conn, char *key) {
+  char delete_query[QUERY_MAX_SIZE];
+  snprintf(delete_query, sizeof(delete_query), "DELETE FROM cache_0 WHERE key = '%s'", key);
 
-void test_insert(struct Connection *conn) {
-  const char *insert_query = "INSERT INTO cache_0 (key, value) VALUES ('key1', 'value1'), ('key2', 'value2'), ('key3', 'value3'), ('key4', 'value4'), ('key5', 'value5'), ('key6', 'value6')";
   char *err_msg;
-  sqlite3_exec(conn->memdb, insert_query, 0, 0, &err_msg);
+  sqlite3_exec(conn->memdb, delete_query, 0, 0, &err_msg);
   if (err_msg) {
     log_err("error: %s", err_msg);
-    sqlite3_free(err_msg);
-    exit(1);
+    sqlite3_free(err_msg); 
   }
 }
 
+char* get(struct Connection *conn, char *key) {
+    char *data = NULL;
+    char select_query[QUERY_MAX_SIZE];
+    char *err_msg;
+    
+    snprintf(select_query, sizeof(select_query), 
+             "SELECT value FROM cache_0 WHERE key = '%s'", key);  
+    
+    sqlite3_stmt *stmt;
+    int status = sqlite3_prepare_v2(conn->memdb, select_query, -1, &stmt, NULL);
+    if (status != SQLITE_OK) {
+        log_err("Failed to prepare statement: %s", sqlite3_errmsg(conn->memdb));
+        return NULL;
+    }
+    
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char* value = (const char *)sqlite3_column_text(stmt, 0);
+        if (value != NULL) {
+            data = malloc(strlen(value) + 1);
+            check_mem(data);
+            strcpy(data, value);
+        }
+    } else {
+        log_info("No row found for key: %s", key);
+    }
+    
+    sqlite3_finalize(stmt);
+    return data;
+}
+
+static inline void ttl_check(struct Connection *conn) {
+  const char *delete_query = "DELETE FROM cache_0 WHERE expires_on IS NOT NULL AND expires_on <= datetime('now')";
+  char *err_msg;
+
+  sqlite3_exec(conn->memdb, delete_query, 0, 0, &err_msg);
+  if (err_msg) {
+    log_err("%s", err_msg);
+    sqlite3_free(err_msg);
+  }
+}
+
+static inline void* ttl_thread_func(void *args) {
+  struct Connection *conn = (struct Connection*)args;
+  is_running = true;
+
+  while (is_running) {
+    ttl_check(conn);
+    sleep(60);
+  }
+
+  return NULL;
+}
+
+int start_ttl_checker(struct Connection *conn) {
+  if(pthread_create(&ttl_thread, NULL, ttl_thread_func, conn) != 0) {
+    return -1;
+  }
+  return 0;
+}
+
+void stop_ttl_checker(void) {
+    if (ttl_thread) {
+        is_running = false;
+        pthread_join(ttl_thread, NULL);
+        ttl_thread = 0;
+    }
+}
+
+
 // int main() {
-//   const char *filename = "./redis.db";
+//   const char *filename = "../redis.db";
 //   struct Connection *conn = calloc(1, sizeof(struct Connection));
 //   init_database(conn, filename);
 //   merge_database(conn);
-//   test_insert(conn);
+//   //set(conn, "key1", "value1", 3600);
+//   char* output = get(conn, "key1");
+//   log_info("Output: %s", (char *)output);
 //   memdb_to_disk_transfer(conn);
 //   free(conn);
 
