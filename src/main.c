@@ -43,7 +43,7 @@ void merge_database(struct Connection *conn) {
     char attach_query[QUERY_MAX_SIZE];
     //const char *attach_query = "ATTACH DATABASE 'redis.db' AS diskdb;";
     snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
-    const char *create_table_query = "CREATE TABLE cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+    const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
     const char *insert_query = "INSERT INTO cache_0 SELECT * FROM diskdb.cache_0;";
     const char *detach_query = "DETACH DATABASE diskdb;";
     char *err_msg;
