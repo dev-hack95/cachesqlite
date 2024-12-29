@@ -9,8 +9,6 @@ import "C"
 import (
 	"time"
 	"unsafe"
-
-	"github.com/spf13/cast"
 )
 
 type Connection struct {
@@ -29,7 +27,6 @@ func (c *Connection) InitDatabase(filename string) error {
 
 	C.init_database(c.conn, cFilename)
 	C.merge_database(c.conn)
-	C.start_ttl_checker(c.conn)
 	return nil
 }
 
@@ -49,7 +46,7 @@ func (c *Connection) Get(key string) (string, error) {
 
 	data := C.get(c.conn, cKey)
 
-	return cast.ToString(data), nil
+	return C.GoString(data), nil
 }
 
 func (c *Connection) Del(key string) error {
@@ -63,7 +60,6 @@ func (c *Connection) Del(key string) error {
 
 func (c *Connection) Cleanup() {
 	C.memdb_to_disk_transfer(c.conn)
-	C.stop_ttl_checker()
 }
 
 func ConvertToSeconds(d time.Duration) int64 {
