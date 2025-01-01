@@ -7,8 +7,11 @@ package client
 */
 import "C"
 import (
+	"fmt"
 	"time"
 	"unsafe"
+
+	"github.com/robfig/cron/v3"
 )
 
 type Connection struct {
@@ -27,6 +30,7 @@ func (c *Connection) InitDatabase(filename string) error {
 
 	C.init_database(c.conn, cFilename)
 	C.merge_database(c.conn)
+	c.setupCronjob()
 	return nil
 }
 
@@ -36,7 +40,7 @@ func (c *Connection) Set(key string, value string, t time.Duration) error {
 	defer C.free(unsafe.Pointer(cKey))
 	defer C.free(unsafe.Pointer(cValue))
 
-	C.set(c.conn, cKey, cValue, C.long(ConvertToSeconds(t)))
+	C.set(c.conn, cKey, cValue, C.long(convertToSeconds(t)))
 	return nil
 }
 
@@ -62,6 +66,15 @@ func (c *Connection) Cleanup() {
 	C.memdb_to_disk_transfer(c.conn)
 }
 
-func ConvertToSeconds(d time.Duration) int64 {
+func convertToSeconds(d time.Duration) int64 {
 	return int64(d / time.Second)
+}
+
+func (c *Connection) setupCronjob() {
+	cron := cron.New()
+	cron.AddFunc("@every 60s", func() {
+		C.ttl_check(c.conn)
+		fmt.Println(time.Now())
+	})
+	cron.Start()
 }

@@ -4,14 +4,9 @@
 #include "../include/conn.h"
 #include <sqlite3.h>
 #include <string.h>
-#include <pthread.h>
-#include <stdbool.h>
-#include <unistd.h>
 
 #define QUERY_MAX_SIZE 1024
 
-static pthread_t ttl_thread = 0;
-static bool is_running = false;
 
 struct Connection {
   sqlite3 *diskdb;
@@ -85,8 +80,16 @@ void memdb_to_disk_transfer(struct Connection *conn) {
   snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
   const char *insert_query = "INSERT INTO diskdb.cache_0 SELECT * FROM cache_0 WHERE key NOT IN (SELECT key FROM diskdb.cache_0);";
   const char *detach_query = "DETACH DATABASE diskdb;";
+  const char *disk_delete_qury = "DELETE FROM cache_0;";
 
   char *err_msg;
+
+  sqlite3_exec(conn->diskdb, disk_delete_qury, 0, 0, &err_msg);
+  if (err_msg) {
+    log_err("error: %s", err_msg);
+    sqlite3_free(err_msg);
+    exit(1);
+  }
 
   sqlite3_exec(conn->memdb, attach_query, 0, 0, &err_msg);
   if (err_msg) {
@@ -114,24 +117,46 @@ void memdb_to_disk_transfer(struct Connection *conn) {
   free(conn->filename);
 }
 
+// void set(struct Connection *conn, char *key, char *value, time_t duration) {
+//   char insert_quey[QUERY_MAX_SIZE];
+//   time_t now = time(NULL);
+//   time_t expires_on = now + duration;
+//   struct tm *tm_info;
+//   char expires_on_str[20];
+
+//   tm_info = localtime(&expires_on);
+//   strftime(expires_on_str, sizeof(expires_on_str), "%Y-%m-%d %H:%M:%S", tm_info);
+//   log_info("%s", expires_on_str);
+//   snprintf(insert_quey, sizeof(insert_quey), "INSERT INTO cache_0 (key, value, expires_on) VALUES('%s', '%s', '%s')", key, value, expires_on_str);
+//   log_info("%s", insert_quey);
+//   char *err_msg;
+
+//   sqlite3_exec(conn->memdb, insert_quey, 0, 0, &err_msg);
+//   if (err_msg) {
+//     log_err("error: %s", err_msg);
+//     sqlite3_free(err_msg);
+//   }
+// }
+
 void set(struct Connection *conn, char *key, char *value, time_t duration) {
-  char insert_quey[QUERY_MAX_SIZE];
-  time_t now = time(NULL);
-  time_t expires_on = now + duration;
-  struct tm *tm_info;
-  char expires_on_str[20];
+    char insert_query[QUERY_MAX_SIZE];
 
-  tm_info = localtime(&expires_on);
-  strftime(expires_on_str, sizeof(expires_on_str), "%Y-%m-%d %H:%M:%S", tm_info);
-  snprintf(insert_quey, sizeof(insert_quey), "INSERT INTO cache_0 (key, value, expires_on) VALUES('%s', '%s', '%s')", key, value, expires_on_str);
-
-  char *err_msg;
-
-  sqlite3_exec(conn->memdb, insert_quey, 0, 0, &err_msg);
-  if (err_msg) {
-    log_err("error: %s", err_msg);
-    sqlite3_free(err_msg);
-  }
+    log_info("%ld", (long)duration);
+    
+    snprintf(insert_query, sizeof(insert_query),
+             "INSERT INTO cache_0 (key, value, expires_on) "
+             "VALUES('%s', '%s', datetime('now', 'localtime', '+%ld seconds'))",
+             key, value, (long)duration);
+    
+    log_info("Query: %s", insert_query);
+    
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(conn->memdb, insert_query, NULL, NULL, &err_msg);
+    
+    if (rc != SQLITE_OK) {
+        log_err("SQLite error: %s", err_msg);
+        sqlite3_free(err_msg);
+    }
 }
 
 void del(struct Connection *conn, char *key) {
@@ -177,7 +202,18 @@ char* get(struct Connection *conn, char *key) {
 }
 
 static inline void ttl_check(struct Connection *conn) {
-  const char *delete_query = "DELETE FROM cache_0 WHERE expires_on IS NOT NULL AND expires_on <= datetime('now')";
+  time_t now = time(NULL);
+  time_t curr_tm = now + 0;
+  struct tm *tm_info;
+  char curr_on_str[20];
+
+  tm_info = localtime(&curr_tm);
+  strftime(curr_on_str, sizeof(curr_on_str), "%Y-%m-%d %H:%M:%S", tm_info);
+  log_info("%s", curr_on_str);
+  char delete_query[QUERY_MAX_SIZE];
+
+  snprintf(delete_query, sizeof(delete_query), "DELETE FROM cache_0 WHERE expires_on IS NOT NULL AND expires_on <= '%s'", curr_on_str);
+  log_info("%s", delete_query);
   char *err_msg;
 
   sqlite3_exec(conn->memdb, delete_query, 0, 0, &err_msg);
@@ -187,42 +223,16 @@ static inline void ttl_check(struct Connection *conn) {
   }
 }
 
-static inline void* ttl_thread_func(void *args) {
-  struct Connection *conn = (struct Connection*)args;
-  is_running = true;
-
-  while (is_running) {
-    ttl_check(conn);
-    sleep(60);
-  }
-
-  return NULL;
-}
-
-int start_ttl_checker(struct Connection *conn) {
-  if(pthread_create(&ttl_thread, NULL, ttl_thread_func, conn) != 0) {
-    return -1;
-  }
-  return 0;
-}
-
-void stop_ttl_checker(void) {
-    if (ttl_thread) {
-        is_running = false;
-        pthread_join(ttl_thread, NULL);
-        ttl_thread = 0;
-    }
-}
-
 
 // int main() {
 //   const char *filename = "../redis.db";
 //   struct Connection *conn = calloc(1, sizeof(struct Connection));
 //   init_database(conn, filename);
 //   merge_database(conn);
-//   //set(conn, "key1", "value1", 3600);
-//   char* output = get(conn, "key1");
+//   set(conn, "key3", "value3", 3600);
+//   char* output = get(conn, "key3");
 //   log_info("Output: %s", (char *)output);
+//   ttl_check(conn);
 //   memdb_to_disk_transfer(conn);
 //   free(conn);
 
