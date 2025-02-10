@@ -7,7 +7,6 @@ package client
 */
 import "C"
 import (
-	"fmt"
 	"time"
 	"unsafe"
 
@@ -29,6 +28,7 @@ func (c *Connection) InitDatabase(filename string) error {
 	defer C.free(unsafe.Pointer(cFilename))
 
 	C.init_database(c.conn, cFilename)
+	//C.init_disk_table(c.conn)
 	C.merge_database(c.conn)
 	c.setupCronjob()
 	return nil
@@ -74,7 +74,6 @@ func (c *Connection) setupCronjob() {
 	cron := cron.New()
 	cron.AddFunc("@every 60s", func() {
 		C.ttl_check(c.conn)
-		fmt.Println(time.Now())
 	})
 	cron.Start()
 }

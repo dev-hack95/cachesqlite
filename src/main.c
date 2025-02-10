@@ -4,6 +4,7 @@
 #include "../include/conn.h"
 #include <sqlite3.h>
 #include <string.h>
+#include <time.h>
 
 #define QUERY_MAX_SIZE 1024
 
@@ -14,8 +15,26 @@ struct Connection {
   char *filename;
 };
 
+bool file_exist(const char* filename) {
+  FILE *fp = fopen(filename, "r");
+  if (fp != NULL) {
+    fclose(fp);
+    return true;
+  }
+  return false;
+}
+
+void create_db_file(const char *filename) {
+  if (!file_exist(filename)) {
+    FILE *fpr;
+    fpr = fopen(filename, "w+");
+    check_mem(fpr);
+    fclose(fpr);
+  }
+}
 
 void init_database(struct Connection *conn,  const char *filename) {
+  create_db_file(filename);
   conn->filename = calloc(strlen(filename) + 1, sizeof(char));
   strncpy(conn->filename, filename, strlen(filename) + 1);
   int diskdb_status = sqlite3_open(filename, &conn->diskdb);
@@ -34,6 +53,30 @@ void init_database(struct Connection *conn,  const char *filename) {
   
 }
 
+
+// void init_disk_table(struct Connection *conn) {
+//     //const char *create_tranction_query = "BEGIN TRANSACTION";
+//     const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+//     //const char *commit_query = "COMMIT;";
+//     char *err_msg;
+
+//     // sqlite3_exec(conn->diskdb, create_tranction_query, 0, 0, &err_msg);
+//     // if (err_msg) {
+//     //     log_err("Error creating table in disk db: %s", err_msg);
+//     //     sqlite3_free(err_msg);
+//     //     exit(1);
+//     // }
+
+//     sqlite3_exec(conn->diskdb, create_table_query, 0, 0, &err_msg);
+//     if (err_msg) {
+//         log_err("Error creating table in disk db: %s", err_msg);
+//         sqlite3_free(err_msg);
+//         exit(1);
+//     }
+
+
+// }
+
 void merge_database(struct Connection *conn) {
     char attach_query[QUERY_MAX_SIZE];
     //const char *attach_query = "ATTACH DATABASE 'redis.db' AS diskdb;";
@@ -43,7 +86,7 @@ void merge_database(struct Connection *conn) {
     const char *detach_query = "DETACH DATABASE diskdb;";
     char *err_msg;
 
-    
+
     sqlite3_exec(conn->memdb, attach_query, 0, 0, &err_msg);
     if (err_msg) {
         log_err("Error attaching database: %s", err_msg);
@@ -228,6 +271,7 @@ static inline void ttl_check(struct Connection *conn) {
 //   const char *filename = "../redis.db";
 //   struct Connection *conn = calloc(1, sizeof(struct Connection));
 //   init_database(conn, filename);
+//   init_disk_table(conn);
 //   merge_database(conn);
 //   set(conn, "key3", "value3", 3600);
 //   char* output = get(conn, "key3");
