@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dev-hack95/cahcesqlite/client"
+	"github.com/dev-hack95/cachesqlite/client"
 
 	"github.com/gin-gonic/gin"
 )

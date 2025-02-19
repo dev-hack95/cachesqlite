@@ -1,9 +1,9 @@
-module github.com/dev-hack95/cahcesqlite
+module github.com/dev-hack95/cachesqlite
 
 go 1.21.13
 
 require (
-	//github.com/gin-gonic/gin v1.10.0
+	github.com/gin-gonic/gin v1.10.0
 	github.com/robfig/cron/v3 v3.0.1
 )
 
