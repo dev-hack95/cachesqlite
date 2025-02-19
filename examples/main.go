@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/dev-hack95/cahcesqlite/client"
-	"github.com/dev-hack95/cahcesqlite/helper"
+	"github.com/dev-hack95/cachesqlite/client"
+	"github.com/dev-hack95/cachesqlite/helper"
 
 	"github.com/gin-gonic/gin"
 )
