@@ -54,28 +54,28 @@ void init_database(struct Connection *conn,  const char *filename) {
 }
 
 
-// void init_disk_table(struct Connection *conn) {
-//     //const char *create_tranction_query = "BEGIN TRANSACTION";
-//     const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
-//     //const char *commit_query = "COMMIT;";
-//     char *err_msg;
+void init_disk_table(struct Connection *conn) {
+    //const char *create_tranction_query = "BEGIN TRANSACTION";
+    const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+    //const char *commit_query = "COMMIT;";
+    char *err_msg;
 
-//     // sqlite3_exec(conn->diskdb, create_tranction_query, 0, 0, &err_msg);
-//     // if (err_msg) {
-//     //     log_err("Error creating table in disk db: %s", err_msg);
-//     //     sqlite3_free(err_msg);
-//     //     exit(1);
-//     // }
+    // sqlite3_exec(conn->diskdb, create_tranction_query, 0, 0, &err_msg);
+    // if (err_msg) {
+    //     log_err("Error creating table in disk db: %s", err_msg);
+    //     sqlite3_free(err_msg);
+    //     exit(1);
+    // }
 
-//     sqlite3_exec(conn->diskdb, create_table_query, 0, 0, &err_msg);
-//     if (err_msg) {
-//         log_err("Error creating table in disk db: %s", err_msg);
-//         sqlite3_free(err_msg);
-//         exit(1);
-//     }
+    sqlite3_exec(conn->diskdb, create_table_query, 0, 0, &err_msg);
+    if (err_msg) {
+        log_err("Error creating table in disk db: %s", err_msg);
+        sqlite3_free(err_msg);
+        exit(1);
+    }
 
 
-// }
+}
 
 void merge_database(struct Connection *conn) {
     char attach_query[QUERY_MAX_SIZE];

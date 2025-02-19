@@ -13,7 +13,7 @@ void set(struct Connection *conn, char *key, char *value, time_t duration);
 char* get(struct Connection *conn, char *key);
 void del(struct Connection *conn, char *key);
 void create_db_file(const char *filename);
-void init_disk_table(struct Connection conn);
+void init_disk_table(struct Connection *conn);
 bool file_exist(const char *filename);
 
 #endif //__conn_h_

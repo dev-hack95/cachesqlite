@@ -28,7 +28,7 @@ func (c *Connection) InitDatabase(filename string) error {
 	defer C.free(unsafe.Pointer(cFilename))
 
 	C.init_database(c.conn, cFilename)
-	//C.init_disk_table(c.conn)
+	C.init_disk_table(c.conn)
 	C.merge_database(c.conn)
 	c.setupCronjob()
 	return nil

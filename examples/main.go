@@ -1,9 +1,10 @@
 package main
 
 import (
-	"cahcesqlite/client"
-	"cahcesqlite/helper"
 	"time"
+
+	"github.com/dev-hack95/cahcesqlite/client"
+	"github.com/dev-hack95/cahcesqlite/helper"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,11 +1,12 @@
 package helper
 
 import (
-	"cahcesqlite/client"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/dev-hack95/cahcesqlite/client"
 
 	"github.com/gin-gonic/gin"
 )
