@@ -22,12 +22,15 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/get/value", func(c *gin.Context) {
-		data, _ := conn.Get("key1")
+		key := c.Request.URL.Query().Get("key")
+		data, _ := conn.Get(key)
 		c.JSON(200, gin.H{"value": data})
 	})
 
 	r.GET("/set/value", func(c *gin.Context) {
-		err := conn.Set("key1", "value1", 10*time.Minute)
+		key := c.Request.URL.Query().Get("key")
+		value := c.Request.URL.Query().Get("value")
+		err := conn.Set(key, value, 10*time.Minute)
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 		}

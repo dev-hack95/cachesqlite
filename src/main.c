@@ -55,7 +55,7 @@ void init_database(struct Connection *conn,  const char *filename) {
 
 
 void init_disk_table(struct Connection *conn) {
-    const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+    const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT PRIMARY KEY, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
     char *err_msg;
 
     sqlite3_exec(conn->diskdb, create_table_query, 0, 0, &err_msg);
@@ -70,7 +70,7 @@ void init_disk_table(struct Connection *conn) {
 void merge_database(struct Connection *conn) {
     char attach_query[QUERY_MAX_SIZE];
     snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
-    const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
+    const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT PRIMARY KEY, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
     const char *insert_query = "INSERT INTO cache_0 SELECT * FROM diskdb.cache_0;";
     const char *detach_query = "DETACH DATABASE diskdb;";
     char *err_msg;
@@ -149,17 +149,19 @@ void memdb_to_disk_transfer(struct Connection *conn) {
 }
 
 void set(struct Connection *conn, char *key, char *value, time_t duration) {
-    char insert_query[QUERY_MAX_SIZE];
+    char upsert_query[QUERY_MAX_SIZE];
 
     
-    snprintf(insert_query, sizeof(insert_query),
-             "INSERT INTO cache_0 (key, value, expires_on) "
-             "VALUES('%s', '%s', datetime('now', 'localtime', '+%ld seconds'))",
-             key, value, (long)duration);
-    
+    snprintf(upsert_query, sizeof(upsert_query),
+         "INSERT INTO cache_0 (key, value, expires_on) "
+         "VALUES('%s', '%s', datetime('now', 'localtime', '+%ld seconds')) "
+         "ON CONFLICT(key) DO UPDATE SET "
+         "value = excluded.value, "
+         "expires_on = excluded.expires_on",
+         key, value, (long)duration);    
     
     char *err_msg = NULL;
-    int rc = sqlite3_exec(conn->memdb, insert_query, NULL, NULL, &err_msg);
+    int rc = sqlite3_exec(conn->memdb, upsert_query, NULL, NULL, &err_msg);
     
     if (rc != SQLITE_OK) {
         log_err("SQLite error: %s", err_msg);
