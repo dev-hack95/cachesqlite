@@ -55,17 +55,8 @@ void init_database(struct Connection *conn,  const char *filename) {
 
 
 void init_disk_table(struct Connection *conn) {
-    //const char *create_tranction_query = "BEGIN TRANSACTION";
     const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
-    //const char *commit_query = "COMMIT;";
     char *err_msg;
-
-    // sqlite3_exec(conn->diskdb, create_tranction_query, 0, 0, &err_msg);
-    // if (err_msg) {
-    //     log_err("Error creating table in disk db: %s", err_msg);
-    //     sqlite3_free(err_msg);
-    //     exit(1);
-    // }
 
     sqlite3_exec(conn->diskdb, create_table_query, 0, 0, &err_msg);
     if (err_msg) {
@@ -74,12 +65,10 @@ void init_disk_table(struct Connection *conn) {
         exit(1);
     }
 
-
 }
 
 void merge_database(struct Connection *conn) {
     char attach_query[QUERY_MAX_SIZE];
-    //const char *attach_query = "ATTACH DATABASE 'redis.db' AS diskdb;";
     snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
     const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
     const char *insert_query = "INSERT INTO cache_0 SELECT * FROM diskdb.cache_0;";
@@ -119,7 +108,6 @@ void merge_database(struct Connection *conn) {
 
 void memdb_to_disk_transfer(struct Connection *conn) {
   char attach_query[QUERY_MAX_SIZE];
-  //const char *attach_query = "ATTACH DATABASE 'redis.db' AS diskdb;";
   snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
   const char *insert_query = "INSERT INTO diskdb.cache_0 SELECT * FROM cache_0 WHERE key NOT IN (SELECT key FROM diskdb.cache_0);";
   const char *detach_query = "DETACH DATABASE diskdb;";
@@ -160,38 +148,15 @@ void memdb_to_disk_transfer(struct Connection *conn) {
   free(conn->filename);
 }
 
-// void set(struct Connection *conn, char *key, char *value, time_t duration) {
-//   char insert_quey[QUERY_MAX_SIZE];
-//   time_t now = time(NULL);
-//   time_t expires_on = now + duration;
-//   struct tm *tm_info;
-//   char expires_on_str[20];
-
-//   tm_info = localtime(&expires_on);
-//   strftime(expires_on_str, sizeof(expires_on_str), "%Y-%m-%d %H:%M:%S", tm_info);
-//   log_info("%s", expires_on_str);
-//   snprintf(insert_quey, sizeof(insert_quey), "INSERT INTO cache_0 (key, value, expires_on) VALUES('%s', '%s', '%s')", key, value, expires_on_str);
-//   log_info("%s", insert_quey);
-//   char *err_msg;
-
-//   sqlite3_exec(conn->memdb, insert_quey, 0, 0, &err_msg);
-//   if (err_msg) {
-//     log_err("error: %s", err_msg);
-//     sqlite3_free(err_msg);
-//   }
-// }
-
 void set(struct Connection *conn, char *key, char *value, time_t duration) {
     char insert_query[QUERY_MAX_SIZE];
 
-    log_info("%ld", (long)duration);
     
     snprintf(insert_query, sizeof(insert_query),
              "INSERT INTO cache_0 (key, value, expires_on) "
              "VALUES('%s', '%s', datetime('now', 'localtime', '+%ld seconds'))",
              key, value, (long)duration);
     
-    log_info("Query: %s", insert_query);
     
     char *err_msg = NULL;
     int rc = sqlite3_exec(conn->memdb, insert_query, NULL, NULL, &err_msg);
@@ -264,19 +229,3 @@ static inline void ttl_check(struct Connection *conn) {
   }
 }
 
-
-// int main() {
-//   const char *filename = "../redis.db";
-//   struct Connection *conn = calloc(1, sizeof(struct Connection));
-//   init_database(conn, filename);
-//   init_disk_table(conn);
-//   merge_database(conn);
-//   set(conn, "key3", "value3", 3600);
-//   char* output = get(conn, "key3");
-//   log_info("Output: %s", (char *)output);
-//   ttl_check(conn);
-//   memdb_to_disk_transfer(conn);
-//   free(conn);
-
-//   return 0;
-// }
