@@ -252,11 +252,9 @@ static inline void ttl_check(struct Connection *conn) {
 
   tm_info = localtime(&curr_tm);
   strftime(curr_on_str, sizeof(curr_on_str), "%Y-%m-%d %H:%M:%S", tm_info);
-  log_info("%s", curr_on_str);
   char delete_query[QUERY_MAX_SIZE];
 
   snprintf(delete_query, sizeof(delete_query), "DELETE FROM cache_0 WHERE expires_on IS NOT NULL AND expires_on <= '%s'", curr_on_str);
-  log_info("%s", delete_query);
   char *err_msg;
 
   sqlite3_exec(conn->memdb, delete_query, 0, 0, &err_msg);
