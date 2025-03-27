@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/dev-hack95/cachesqlite/client"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +17,7 @@ func RunServer(host string, conn *client.Connection, r *gin.Engine) {
 	defer conn.Cleanup()
 
 	go func() {
-		if err := r.Run("0.0.0.0:8000"); err != nil {
+		if err := r.Run(host); err != nil {
 			log.Printf("Server error: %v", err)
 			cleanup <- os.Interrupt // Trigger cleanup on error
 		}

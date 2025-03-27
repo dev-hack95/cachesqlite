@@ -74,6 +74,7 @@ func (c *Connection) setupCronjob() {
 	cron := cron.New()
 	cron.AddFunc("@every 60s", func() {
 		C.ttl_check(c.conn)
+		C.dump_data(c.conn)
 	})
 	cron.Start()
 }

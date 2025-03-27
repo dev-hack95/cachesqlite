@@ -202,6 +202,7 @@ char* get(struct Connection *conn, char *key) {
             data = malloc(strlen(value) + 1);
             check_mem(data);
             strcpy(data, value);
+            free(data);
         }
     } else {
         log_info("No row found for key: %s", key);
@@ -227,6 +228,50 @@ static inline void ttl_check(struct Connection *conn) {
   sqlite3_exec(conn->memdb, delete_query, 0, 0, &err_msg);
   if (err_msg) {
     log_err("%s", err_msg);
+    sqlite3_free(err_msg);
+  }
+
+  sqlite3_exec(conn->diskdb, delete_query, 0, 0, &err_msg);
+  if (err_msg) {
+    log_err("%s", err_msg);
+    sqlite3_free(err_msg);
+  }
+}
+
+static inline void dump_data(struct Connection *conn) {
+  struct Values values;
+  char insert_query[QUERY_MAX_SIZE];
+  const char *select_query = "SELECT key, value, expires_on, created_on FROM cache_0;";
+
+  sqlite3_stmt *stmt;
+  int status = sqlite3_prepare_v2(conn->memdb, select_query, -1, &stmt, NULL);
+  if (status != SQLITE_OK) {
+    log_err("Failed to prepare statement: %s", sqlite3_errmsg(conn->memdb));
+    return;
+  }
+
+  if (sqlite3_step(stmt) == SQLITE_ROW) {
+    values.key = (const char*)sqlite3_column_text(stmt, 0);
+    values.value = (const char*)sqlite3_column_text(stmt, 1);
+    values.expires_on = (const char*)sqlite3_column_text(stmt, 2);
+    values.created_on = (const char*)sqlite3_column_text(stmt, 3);
+
+    log_info("%s", values.key);
+  } else {
+    log_info("No data found");
+  }
+  sqlite3_finalize(stmt);
+
+  snprintf(insert_query, sizeof(insert_query), "INERT INTO cache_0(key, value, expires_on, created_on) VALUES('%s', '%s', '%s', '%s')", values.key, values.value, values.expires_on, values.created_on);
+
+  log_info("%s", insert_query);
+
+  char *err_msg = NULL;
+
+  int rc = sqlite3_exec(conn->diskdb, insert_query, 0, 0, &err_msg); 
+
+  if (rc != SQLITE_OK) {
+    log_err("SQLite error: %s", err_msg);
     sqlite3_free(err_msg);
   }
 }

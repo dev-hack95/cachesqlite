@@ -6,6 +6,13 @@
 
 struct Connection;
 
+struct Values {
+  const char* key;
+  const char* value;
+  const char* expires_on;
+  const char* created_on;
+};
+
 void init_database(struct Connection *conn, const char *filename);
 void merge_database(struct Connection *conn);
 void mem_to_disk_transfer(struct Connection *conn);
