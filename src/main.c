@@ -262,7 +262,7 @@ static inline void dump_data(struct Connection *conn) {
   }
   sqlite3_finalize(stmt);
 
-  snprintf(insert_query, sizeof(insert_query), "INERT INTO cache_0(key, value, expires_on, created_on) VALUES('%s', '%s', '%s', '%s')", values.key, values.value, values.expires_on, values.created_on);
+  snprintf(insert_query, sizeof(insert_query), "INSERT INTO cache_0(key, value, expires_on, created_on) VALUES('%s', '%s', '%s', '%s')", values.key, values.value, values.expires_on, values.created_on);
 
   log_info("%s", insert_query);
 
