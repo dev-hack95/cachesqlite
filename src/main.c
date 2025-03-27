@@ -202,7 +202,6 @@ char* get(struct Connection *conn, char *key) {
             data = malloc(strlen(value) + 1);
             check_mem(data);
             strcpy(data, value);
-            free(data);
         }
     } else {
         log_info("No row found for key: %s", key);

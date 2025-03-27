@@ -9,8 +9,6 @@ github.com/cloudwego/iasm v0.2.0/go.mod h1:8rXZaNYT2n95jn+zTI1sDr+IgcD2GVs0nlbbQ
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dev-hack95/cachesqlite v0.0.0-20250219085824-06b1b8104d3b h1:0mCaZVbgiRZh/oN0PFmdRjoo+HVdQdRZWaWrpiCQYTM=
-github.com/dev-hack95/cachesqlite v0.0.0-20250219085824-06b1b8104d3b/go.mod h1:MGPjHg/UOCSwuGwGndjtacsgqujuS9/cg/FtgNLk4dM=
 github.com/dev-hack95/cachesqlite v0.0.0-20250327165306-0af2e92b8da9 h1:ysM/bsBS7xOwzaOhZfe05Xy4nx9ignKRPUnGYC8pCtY=
 github.com/dev-hack95/cachesqlite v0.0.0-20250327165306-0af2e92b8da9/go.mod h1:MGPjHg/UOCSwuGwGndjtacsgqujuS9/cg/FtgNLk4dM=
 github.com/gabriel-vasile/mimetype v1.4.8 h1:FfZ3gj38NjllZIeJAmMhr+qKL8Wu+nOoI3GqacKw1NM=
