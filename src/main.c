@@ -239,40 +239,47 @@ static inline void ttl_check(struct Connection *conn) {
 }
 
 static inline void dump_data(struct Connection *conn) {
-  struct Values values;
-  char insert_query[QUERY_MAX_SIZE];
-  const char *select_query = "SELECT key, value, expires_on, created_on FROM cache_0;";
+    sqlite3_stmt *stmt;
+    const char *select_query = "SELECT key, value, expires_on, created_on FROM cache_0;";
+    int status, rows_processed = 0;
 
-  sqlite3_stmt *stmt;
-  int status = sqlite3_prepare_v2(conn->memdb, select_query, -1, &stmt, NULL);
-  if (status != SQLITE_OK) {
-    log_err("Failed to prepare statement: %s", sqlite3_errmsg(conn->memdb));
-    return;
-  }
+    status = sqlite3_prepare_v2(conn->memdb, select_query, -1, &stmt, NULL);
+    if (status != SQLITE_OK) {
+        log_err("Failed to prepare statement: %s", sqlite3_errmsg(conn->memdb));
+        return;
+    }
 
-  if (sqlite3_step(stmt) == SQLITE_ROW) {
-    values.key = (const char*)sqlite3_column_text(stmt, 0);
-    values.value = (const char*)sqlite3_column_text(stmt, 1);
-    values.expires_on = (const char*)sqlite3_column_text(stmt, 2);
-    values.created_on = (const char*)sqlite3_column_text(stmt, 3);
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *key = (const char*)sqlite3_column_text(stmt, 0);
+        const char *value = (const char*)sqlite3_column_text(stmt, 1);
+        const char *expires_on = (const char*)sqlite3_column_text(stmt, 2);
+        const char *created_on = (const char*)sqlite3_column_text(stmt, 3);
 
-    log_info("%s", values.key);
-  } else {
-    log_info("No data found");
-  }
-  sqlite3_finalize(stmt);
+        if (key && value && expires_on && created_on) {
+            sqlite3_stmt *insert_stmt;
+            const char *insert_query = "INSERT INTO cache_0(key, value, expires_on, created_on) VALUES(?, ?, ?, ?)";
+            
+            status = sqlite3_prepare_v2(conn->diskdb, insert_query, -1, &insert_stmt, NULL);
+            if (status != SQLITE_OK) {
+                log_err("Failed to prepare insert statement: %s", sqlite3_errmsg(conn->diskdb));
+                continue;
+            }
 
-  snprintf(insert_query, sizeof(insert_query), "INSERT INTO cache_0(key, value, expires_on, created_on) VALUES('%s', '%s', '%s', '%s')", values.key, values.value, values.expires_on, values.created_on);
+            sqlite3_bind_text(insert_stmt, 1, key, -1, SQLITE_STATIC);
+            sqlite3_bind_text(insert_stmt, 2, value, -1, SQLITE_STATIC);
+            sqlite3_bind_text(insert_stmt, 3, expires_on, -1, SQLITE_STATIC);
+            sqlite3_bind_text(insert_stmt, 4, created_on, -1, SQLITE_STATIC);
 
-  log_info("%s", insert_query);
+            status = sqlite3_step(insert_stmt);
+            if (status != SQLITE_DONE) {
+                log_err("Insert failed: %s", sqlite3_errmsg(conn->diskdb));
+            }
 
-  char *err_msg = NULL;
+            sqlite3_finalize(insert_stmt);
+            rows_processed++;
+        }
+    }
 
-  int rc = sqlite3_exec(conn->diskdb, insert_query, 0, 0, &err_msg); 
-
-  if (rc != SQLITE_OK) {
-    log_err("SQLite error: %s", err_msg);
-    sqlite3_free(err_msg);
-  }
+    sqlite3_finalize(stmt);
+    log_info("Processed %d rows", rows_processed);
 }
-

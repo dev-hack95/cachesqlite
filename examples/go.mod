@@ -2,15 +2,13 @@ module example
 
 go 1.21.13
 
-require (
-	github.com/dev-hack95/cachesqlite v0.0.0-20250327165306-0af2e92b8da9
-	github.com/gin-gonic/gin v1.10.0
-)
+require github.com/gin-gonic/gin v1.10.0
 
 require (
 	github.com/bytedance/sonic v1.12.9 // indirect
 	github.com/bytedance/sonic/loader v0.2.3 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
+	github.com/dev-hack95/cachesqlite v0.0.0-20250327165306-0af2e92b8da9 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
