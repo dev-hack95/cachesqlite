@@ -7,6 +7,7 @@ package client
 */
 import "C"
 import (
+	"errors"
 	"time"
 	"unsafe"
 
@@ -49,6 +50,10 @@ func (c *Connection) Get(key string) (string, error) {
 	defer C.free(unsafe.Pointer(cKey))
 
 	data := C.get(c.conn, cKey)
+
+	if C.GoString(data) == "" {
+		return "", errors.New("record not found")
+	}
 
 	return C.GoString(data), nil
 }

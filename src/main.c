@@ -199,9 +199,7 @@ char* get(struct Connection *conn, char *key) {
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         const char* value = (const char *)sqlite3_column_text(stmt, 0);
         if (value != NULL) {
-            data = malloc(strlen(value) + 1);
-            check_mem(data);
-            strcpy(data, value);
+            data = strdup(value);
         }
     } else {
         log_info("No row found for key: %s", key);
@@ -256,7 +254,7 @@ static inline void dump_data(struct Connection *conn) {
 
         if (key && value && expires_on && created_on) {
             sqlite3_stmt *insert_stmt;
-            const char *insert_query = "INSERT INTO cache_0(key, value, expires_on, created_on) VALUES(?, ?, ?, ?)";
+            const char *insert_query = "INSERT OR IGNORE INTO cache_0 (key, value, expires_on, created_on) VALUES (?, ?, ?, ?);";
             
             status = sqlite3_prepare_v2(conn->diskdb, insert_query, -1, &insert_stmt, NULL);
             if (status != SQLITE_OK) {
