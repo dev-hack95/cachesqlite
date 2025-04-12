@@ -23,7 +23,16 @@ func main() {
 
 	r.GET("/get/value", func(c *gin.Context) {
 		key := c.Request.URL.Query().Get("key")
-		data, _ := conn.Get(key)
+		data, err := conn.Get(key)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+
+		if data == "" {
+			c.JSON(400, gin.H{"error": "no record found"})
+			return
+		}
 		c.JSON(200, gin.H{"value": data})
 	})
 

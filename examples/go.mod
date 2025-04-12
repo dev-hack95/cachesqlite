@@ -3,7 +3,7 @@ module example
 go 1.21.13
 
 require (
-	github.com/dev-hack95/cachesqlite v0.0.0-20250327165306-0af2e92b8da9
+	github.com/dev-hack95/cachesqlite v0.0.0-20250327173619-3d50cc3c4070
 	github.com/gin-gonic/gin v1.10.0
 )
 
