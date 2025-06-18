@@ -1,3 +1,4 @@
+#include <bits/pthreadtypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../include/dbg.h"
@@ -5,6 +6,7 @@
 #include <sqlite3.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 
 #define QUERY_MAX_SIZE 1024
 
@@ -13,6 +15,7 @@ struct Connection {
   sqlite3 *diskdb;
   sqlite3 *memdb;
   char *filename;
+  pthread_mutex_t mutex;
 };
 
 bool file_exist(const char* filename) {
@@ -37,6 +40,14 @@ void init_database(struct Connection *conn,  const char *filename) {
   create_db_file(filename);
   conn->filename = calloc(strlen(filename) + 1, sizeof(char));
   strncpy(conn->filename, filename, strlen(filename) + 1);
+
+  int mutex = pthread_mutex_init(&conn->mutex, NULL);
+
+  if (mutex != 0) {
+    free(conn->filename);
+    exit(1);
+  }
+
   int diskdb_status = sqlite3_open(filename, &conn->diskdb);
   if (diskdb_status != SQLITE_OK) {
     log_err("error occured at opening sql file");
@@ -50,11 +61,11 @@ void init_database(struct Connection *conn,  const char *filename) {
     sqlite3_close(conn->memdb);
     exit(1);
   }
-  
 }
 
 
 void init_disk_table(struct Connection *conn) {
+    pthread_mutex_lock(&conn->mutex);
     const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT PRIMARY KEY, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
     char *err_msg;
 
@@ -64,10 +75,11 @@ void init_disk_table(struct Connection *conn) {
         sqlite3_free(err_msg);
         exit(1);
     }
-
+    pthread_mutex_unlock(&conn->mutex);
 }
 
 void merge_database(struct Connection *conn) {
+    pthread_mutex_lock(&conn->mutex);
     char attach_query[QUERY_MAX_SIZE];
     snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
     const char *create_table_query = "CREATE TABLE IF NOT EXISTS cache_0 (key TEXT PRIMARY KEY, value TEXT, expires_on TIMESTAMP, created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP);";
@@ -103,10 +115,12 @@ void merge_database(struct Connection *conn) {
         sqlite3_free(err_msg);
         exit(1);
     }
+    pthread_mutex_unlock(&conn->mutex);
 }
 
 
 void memdb_to_disk_transfer(struct Connection *conn) {
+  pthread_mutex_lock(&conn->mutex);
   char attach_query[QUERY_MAX_SIZE];
   snprintf(attach_query, sizeof(attach_query), "ATTACH DATABASE '%s' AS diskdb;", conn->filename);
   const char *insert_query = "INSERT INTO diskdb.cache_0 SELECT * FROM cache_0 WHERE key NOT IN (SELECT key FROM diskdb.cache_0);";
@@ -146,9 +160,11 @@ void memdb_to_disk_transfer(struct Connection *conn) {
   sqlite3_close(conn->diskdb);
   sqlite3_close(conn->memdb);
   free(conn->filename);
+  pthread_mutex_unlock(&conn->mutex);
 }
 
 void set(struct Connection *conn, char *key, char *value, time_t duration) {
+    pthread_mutex_lock(&conn->mutex);
     char upsert_query[QUERY_MAX_SIZE];
 
     
@@ -167,9 +183,11 @@ void set(struct Connection *conn, char *key, char *value, time_t duration) {
         log_err("SQLite error: %s", err_msg);
         sqlite3_free(err_msg);
     }
+    pthread_mutex_unlock(&conn->mutex);
 }
 
 void del(struct Connection *conn, char *key) {
+  pthread_mutex_lock(&conn->mutex);
   char delete_query[QUERY_MAX_SIZE];
   snprintf(delete_query, sizeof(delete_query), "DELETE FROM cache_0 WHERE key = '%s'", key);
 
@@ -179,9 +197,11 @@ void del(struct Connection *conn, char *key) {
     log_err("error: %s", err_msg);
     sqlite3_free(err_msg); 
   }
+  pthread_mutex_unlock(&conn->mutex);
 }
 
 char* get(struct Connection *conn, char *key) {
+    pthread_mutex_lock(&conn->mutex);
     char *data = NULL;
     char select_query[QUERY_MAX_SIZE];
     char *err_msg;
@@ -206,10 +226,12 @@ char* get(struct Connection *conn, char *key) {
     }
     
     sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&conn->mutex);
     return data;
 }
 
 static inline void ttl_check(struct Connection *conn) {
+  pthread_mutex_lock(&conn->mutex);
   time_t now = time(NULL);
   time_t curr_tm = now + 0;
   struct tm *tm_info;
@@ -233,9 +255,11 @@ static inline void ttl_check(struct Connection *conn) {
     log_err("%s", err_msg);
     sqlite3_free(err_msg);
   }
+  pthread_mutex_unlock(&conn->mutex);
 }
 
 static inline void dump_data(struct Connection *conn) {
+    pthread_mutex_lock(&conn->mutex);
     sqlite3_stmt *stmt;
     const char *select_query = "SELECT key, value, expires_on, created_on FROM cache_0;";
     int status, rows_processed = 0;
@@ -279,4 +303,5 @@ static inline void dump_data(struct Connection *conn) {
 
     sqlite3_finalize(stmt);
     log_info("Processed %d rows", rows_processed);
+    pthread_mutex_unlock(&conn->mutex);
 }
