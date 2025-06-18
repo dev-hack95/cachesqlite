@@ -50,12 +50,22 @@ func (c *Connection) Get(key string) (string, error) {
 	defer C.free(unsafe.Pointer(cKey))
 
 	data := C.get(c.conn, cKey)
-
-	if C.GoString(data) == "" {
+	if data == nil {
 		return "", errors.New("record not found")
 	}
 
-	return C.GoString(data), nil
+	defer C.free(unsafe.Pointer(data))
+
+	result := C.GoString(data)
+	if result == "" {
+		return "", errors.New("record not found")
+	}
+
+	if result == "" {
+		return "", errors.New("record not found")
+	}
+
+	return result, nil
 }
 
 func (c *Connection) Del(key string) error {
